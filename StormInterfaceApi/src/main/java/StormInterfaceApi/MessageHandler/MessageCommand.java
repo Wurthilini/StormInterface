@@ -1,11 +1,83 @@
 package StormInterfaceApi.MessageHandler;
 
+import java.util.Arrays;
+
 public class MessageCommand {
 
-	public void BuildRequest(MessageRequest messageRequest, String fullPacket)
+	public Integer lastErrorCode; //TODO -> enum with error codes
+	public Integer led_brightness;
+	public Integer keypad_table;
+	public Integer jack_status;
+	public Integer hv_status;
+	public byte[] keycodeTable;
+	public void buildRequest(MessageRequest messageRequest, byte[] _responseMessage)
 	{
-		System.out.println("test");
-		System.out.println("test2");
+		MessageBuildPacket messageBuildPacket = new MessageBuildPacket();
+		boolean retbool = false;
+		String dataTosend = "";
+		String workString;
+		try
+		{
+			switch(messageRequest.requestType)
+			{
+			case LED_BRIGHTNESS:
+				dataTosend += messageRequest.param1;
+				break;
+			case LOAD_NEW_TABLE:
+				//reinterprete 
+				//c++
+				//std::string str (reinterpret_cast<const char *> (newRequest->ptrString),newRequest->param1);
+				//dataToSend  += str ;	
+				break;
+			case KEYPAD_TYPE:
+				dataTosend += messageRequest.param1;
+				break;
+			default:
+				break;
+			}
+			messageBuildPacket.makePacket(messageRequest.requestType.getValue(), dataTosend, _responseMessage);
+		}
+		//TODO -> add exceptions with error codes
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+	}
+	
+	public boolean decodeMessage(MessageHeader receivedMessage) throws Exception
+	{
+		boolean retbool = true;
+		int conversionOutput;
+		char[] tmpBuffer = new char[50];
+		int idx = 0;
+		int cnt;
+		int retval;
+		int fieldSize;
+		//Get Error Code
+		fieldSize = 1;
+		this.lastErrorCode = (int) receivedMessage.messageData[idx];
+		if(0> this.lastErrorCode)
+			throw new Exception("Inbalid Keypad Error");
+		idx += fieldSize;
+		//get led bitghtness
+		this.led_brightness = (int) receivedMessage.messageData[idx];
+		idx += fieldSize;
+		//get inverse Mode
+		this.keypad_table = (int) receivedMessage.messageData[idx];
+		idx += fieldSize;
+		//get contrast Level
+		this.jack_status = (int) receivedMessage.messageData[idx];
+		idx += fieldSize;
+		//get backlight 
+		this.hv_status = (int) receivedMessage.messageData[idx];
+		idx += fieldSize;
+		//get keycode table
+		this.keycodeTable = Arrays.copyOfRange(receivedMessage.messageData, idx, 20);
+		idx += 20;
+		//TODO -> version number and serial number
+		//get firmware version
+		
+		return retbool;
 	}
 	
 }

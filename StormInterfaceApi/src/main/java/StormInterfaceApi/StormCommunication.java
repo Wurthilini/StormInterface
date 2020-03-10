@@ -9,6 +9,8 @@ import org.hid4java.HidServicesSpecification;
 import org.hid4java.ScanMode;
 import org.hid4java.event.HidServicesEvent;
 
+import StormInterfaceApi.StormCommunicationManager.DEVICE_INFO;
+
 import java.util.concurrent.TimeUnit;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -29,13 +31,49 @@ public class StormCommunication implements HidServicesListener {
   //private static final int PACKET_LENGTH = 64;
   private static final String SERIAL_NUMBER = null;
 
-  public static void main(String[] args) throws HidException {
+  public static void main(String[] args) throws Exception {
 
     StormCommunication example = new StormCommunication();
-    example.executeExample();
-
+    //example.executeExample();
+    StormCommunicationManager comunicManager = new StormCommunicationManager();
+    boolean test = comunicManager.InitialiseStormUSBDevice();
+    DEVICE_INFO deviceInfo = new DEVICE_INFO();
+    try {
+		deviceInfo = comunicManager.GetDeviceStatus(500);
+		System.out.printf("LED LEVEL -> %d \n", deviceInfo.led_brightness);
+	} catch (Exception e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}
   }
 
+	/*public static class DeviceInfo
+	{
+		byte led_brightness;
+		byte keypad_table;
+		byte jack_status;
+		byte HV_status;
+		byte[] keyCode = new byte[20];
+		String version;
+		String serialNumber;
+	}*/
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   @SuppressWarnings("deprecation")
 private void executeExample() throws HidException {
 
