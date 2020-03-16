@@ -85,15 +85,145 @@ public class StormCommunicationManager extends StormCommunication{
 	boolean setLedLevel(int ledLevel) throws Exception
 	{
 		boolean initialised = false, retbool = true, sendMessageSuccess = false, readMessageSuccess = false;
-		MessageRequest newRequest = new MessageRequest();
-		newRequest.requestType = newRequest.requestType.LED_BRIGHTNESS;
-		newRequest.param1 = (byte) ledLevel;
 		if(hidDevice == null)
 		{
 			initialised = initialiseStormUSBDevice();
 			if(!initialised)
 				throw new Exception("storm device may not be connected");
 		}
+		MessageRequest newRequest = new MessageRequest();
+		newRequest.requestType = newRequest.requestType.LED_BRIGHTNESS;
+		newRequest.param1 = (byte) ledLevel;
+		messageRequests.add(newRequest);
+		sendMessageSuccess = SendMessageRequest(newRequest);
+		if(sendMessageSuccess)
+			readMessageSuccess = readStormResponse();
+		else
+		{
+			System.err.println(hidDevice.getLastErrorMessage());
+			retbool = false;
+		}
+		retbool = readMessageSuccess ? true : false;
+		return retbool;
+	}
+	
+	boolean setKeypadTable(int keycodeTable) throws Exception
+	{
+		boolean initialised = false, retbool = true, sendMessageSuccess = false, readMessageSuccess = false;
+		if(keycodeTable>2)
+			throw new Exception("Unknown KeypadType");
+		if(hidDevice == null)
+		{
+			initialised = initialiseStormUSBDevice();
+			if(!initialised)
+				throw new Exception("storm device may not be connected");
+		}
+		MessageRequest newRequest = new MessageRequest();
+		newRequest.requestType = newRequest.requestType.KEYPAD_TYPE;
+		newRequest.param1 = (byte) keycodeTable;
+		messageRequests.add(newRequest);
+		sendMessageSuccess = SendMessageRequest(newRequest);
+		if(sendMessageSuccess)
+			readMessageSuccess = readStormResponse();
+		else
+		{
+			System.err.println(hidDevice.getLastErrorMessage());
+			retbool = false;
+		}
+		retbool = readMessageSuccess ? true : false;
+		return retbool;
+	}
+	
+	boolean loadCodeTable(byte[] keyCodes, int keyCodeLen) throws Exception
+	{
+		boolean initialised = false, retbool = true, sendMessageSuccess = false, readMessageSuccess = false;
+		if(keyCodes.length!=20)
+			throw new Exception("loadCodeTable requieres 20 keyCodes");
+		if(hidDevice == null)
+		{
+			initialised = initialiseStormUSBDevice();
+			if(!initialised)
+				throw new Exception("storm device may not be connected");
+		}
+		MessageRequest newRequest = new MessageRequest();
+		newRequest.requestType = newRequest.requestType.LOAD_NEW_TABLE;
+		newRequest.param1 = (byte) keyCodeLen;
+		newRequest.ptrString = keyCodes;
+		messageRequests.add(newRequest);
+		sendMessageSuccess = SendMessageRequest(newRequest);
+		if(sendMessageSuccess)
+			readMessageSuccess = readStormResponse();
+		else
+		{
+			System.err.println(hidDevice.getLastErrorMessage());
+			retbool = false;
+		}
+		retbool = readMessageSuccess ? true : false;
+		return retbool;
+	}
+	
+	boolean writeDefaultToFlash() throws Exception
+	{
+		boolean initialised = false, retbool = true, sendMessageSuccess = false, readMessageSuccess = false;
+		if(hidDevice == null)
+		{
+			initialised = initialiseStormUSBDevice();
+			if(!initialised)
+				throw new Exception("storm device may not be connected");
+		}
+		MessageRequest newRequest = new MessageRequest();
+		newRequest.requestType = newRequest.requestType.WRITE_DEFAULT;
+		messageRequests.add(newRequest);
+		sendMessageSuccess = SendMessageRequest(newRequest);
+		if(sendMessageSuccess)
+			readMessageSuccess = readStormResponse();
+		else
+		{
+			System.err.println(hidDevice.getLastErrorMessage());
+			retbool = false;
+		}
+		retbool = readMessageSuccess ? true : false;
+		return retbool;
+	}
+	
+	boolean resetToFactoryDefault() throws Exception
+	{
+		boolean initialised = false, retbool = true, sendMessageSuccess = false, readMessageSuccess = false;
+		if(hidDevice == null)
+		{
+			initialised = initialiseStormUSBDevice();
+			if(!initialised)
+				throw new Exception("storm device may not be connected");
+		}
+		MessageRequest newRequest = new MessageRequest();
+		newRequest.requestType = newRequest.requestType.RESET_TO_FACTORY_DEFAULT;
+		messageRequests.add(newRequest);
+		sendMessageSuccess = SendMessageRequest(newRequest);
+		if(sendMessageSuccess)
+			readMessageSuccess = readStormResponse();
+		else
+		{
+			System.err.println(hidDevice.getLastErrorMessage());
+			retbool = false;
+		}
+		retbool = readMessageSuccess ? true : false;
+		return retbool;
+	}
+	
+	boolean setSerialNumber(String serialNumber) throws Exception
+	{
+		boolean initialised = false, retbool = true, sendMessageSuccess = false, readMessageSuccess = false;
+		if(hidDevice == null)
+		{
+			initialised = initialiseStormUSBDevice();
+			if(!initialised)
+				throw new Exception("storm device may not be connected");
+		}
+		if(serialNumber.isEmpty())
+			throw new Exception("serialNumber has to be unequal null");
+		MessageRequest newRequest = new MessageRequest();
+		newRequest.requestType = newRequest.requestType.SET_SERIAL_NO;
+		newRequest.ptrString = serialNumber.getBytes();
 		messageRequests.add(newRequest);
 		sendMessageSuccess = SendMessageRequest(newRequest);
 		if(sendMessageSuccess)
@@ -143,11 +273,11 @@ public class StormCommunicationManager extends StormCommunication{
 		          moreData = false;
 		          break;
 		    default:
-		    	System.out.print("[");
+		    	/*System.out.print("[");
 		    	for(byte currentbyte : data)
 		    		System.out.printf(" %x",currentbyte);
 		    	System.out.print("]");
-		    	System.out.println();
+		    	System.out.println();*/
 		    	this.stormResponse.add(data);
 		    	break;
 		    }
@@ -232,6 +362,8 @@ public class StormCommunicationManager extends StormCommunication{
 		this.deviceInfo.jack_status = commandStatus.jack_status;
 		this.deviceInfo.HV_status = commandStatus.hv_status;
 		this.deviceInfo.keyCode = commandStatus.keycodeTable;
+		this.deviceInfo.version = commandStatus.version;
+		this.deviceInfo.serialNumber = commandStatus.serialNo;
 		return retbool;
 	}
 	

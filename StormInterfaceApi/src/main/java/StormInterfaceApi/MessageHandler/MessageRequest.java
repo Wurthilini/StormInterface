@@ -31,7 +31,7 @@ public class MessageRequest {
 	    WRITE_DEFAULT(9),			// Write defaults values from ram to flash
 	    RESET_TO_FACTORY_DEFAULT(10),  // reset the setting to factory default
 	    ENABLE_BSL(11),				//start downloader
-		SET_SERIAL_NO(13);			// command to set serial number
+		SET_SERIAL_NO(14);			// command to set serial number
 		private final int value;
 		
 		private REQUEST_TYPE(int value)
@@ -53,7 +53,7 @@ public class MessageRequest {
 	public int param6;
 	public int param7;
 	public int param8;
-	public byte ptrString;
+	public byte[] ptrString;
 	public String paramStr;
 	
 }
