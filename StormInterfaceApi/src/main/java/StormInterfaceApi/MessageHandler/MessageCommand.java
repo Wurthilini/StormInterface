@@ -1,5 +1,6 @@
 package StormInterfaceApi.MessageHandler;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 public class MessageCommand {
@@ -10,18 +11,19 @@ public class MessageCommand {
 	public Integer jack_status;
 	public Integer hv_status;
 	public byte[] keycodeTable;
-	public void buildRequest(MessageRequest messageRequest, byte[] _responseMessage)
+	
+	public byte[] buildRequest(MessageRequest messageRequest, byte[] _responseMessage)
 	{
 		MessageBuildPacket messageBuildPacket = new MessageBuildPacket();
 		boolean retbool = false;
-		String dataTosend = "";
-		String workString;
+		ArrayList<Byte> dataTosend = new ArrayList<Byte>();
 		try
 		{
 			switch(messageRequest.requestType)
 			{
 			case LED_BRIGHTNESS:
-				dataTosend += messageRequest.param1;
+				dataTosend.add(messageRequest.param1);
+				//dataTosend += messageRequest.param1;
 				break;
 			case LOAD_NEW_TABLE:
 				//reinterprete 
@@ -30,18 +32,19 @@ public class MessageCommand {
 				//dataToSend  += str ;	
 				break;
 			case KEYPAD_TYPE:
-				dataTosend += messageRequest.param1;
+				dataTosend.add(messageRequest.param1);
 				break;
 			default:
 				break;
 			}
-			messageBuildPacket.makePacket(messageRequest.requestType.getValue(), dataTosend, _responseMessage);
+			_responseMessage = messageBuildPacket.makePacket(messageRequest.requestType.getValue(), dataTosend, _responseMessage);
 		}
 		//TODO -> add exceptions with error codes
 		catch (Exception e)
 		{
 			e.printStackTrace();
 		}
+		return _responseMessage;
 	}
 	
 	public boolean decodeMessage(MessageHeader receivedMessage) throws Exception

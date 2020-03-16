@@ -1,52 +1,52 @@
 package StormInterfaceApi.MessageHandler;
-import java.text.CharacterIterator;
-import java.text.StringCharacterIterator;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 public class MessageBuildPacket {
 	
 	private static final byte SC_STX = 0x02;
 	private static final byte SC_ETX = 0x03;
 	private static final byte USB_REPORT_LEN = 64;
+	private static final byte KEYMAT_REPORT_ID = 0x3f;
 	
-	public boolean makePacket(int requestType, String dataTosend, byte[] _responseMessage)
+	public byte[] makePacket(int requestType, ArrayList<Byte> dataTosend, byte[] _responseMessage)
 	{
-		//byte[] _responseMessage = new byte[USB_REPORT_LEN];
-		boolean retbool = true;
+		byte[] _responseMessageTemp = new byte[USB_REPORT_LEN];
 		byte LRC = SC_STX;
 		String messageID = null;
 		String messageLength = null;
-		byte usbLen;
 		char[] convString = {(char) (requestType & 0xff)}; 
 		messageID = binaryToASCIIHex(convString);
-		int dataTosendLength = dataTosend == null ? 0 : dataTosend.length();
+		int dataTosendLength = dataTosend.isEmpty() ? 0 : dataTosend.size();
 		char[] convStringSecond = {(char) (dataTosendLength & 0xff)};
 		messageLength = binaryToASCIIHex(convStringSecond);
-		//_responseMessage[0] = KEYMAT_REPORT_ID; -> is set in hid_write function
-		_responseMessage[0] = USB_REPORT_LEN;
-		_responseMessage[1] = SC_STX;
-		_responseMessage[2] = (byte) messageID.toCharArray()[0];
-		_responseMessage[3] = (byte) messageID.toCharArray()[1];
-		_responseMessage[4] = (byte) messageLength.toCharArray()[0];
-		_responseMessage[5] = (byte) messageLength.toCharArray()[1];
-		int currentIndex = 6;
-		for(char charIndataTosend : dataTosend.toCharArray())
+		_responseMessageTemp[0] = KEYMAT_REPORT_ID;// -> is set in hid_write function
+		_responseMessageTemp[1] = USB_REPORT_LEN;
+		_responseMessageTemp[2] = SC_STX;
+		_responseMessageTemp[3] = (byte) messageID.toCharArray()[0];
+		_responseMessageTemp[4] = (byte) messageID.toCharArray()[1];
+		_responseMessageTemp[5] = (byte) messageLength.toCharArray()[0];
+		_responseMessageTemp[6] = (byte) messageLength.toCharArray()[1];
+		int currentIndex = 7;
+		for(byte bytesTosend : dataTosend)
 		{
-			_responseMessage[currentIndex] = (byte) charIndataTosend;
+			_responseMessageTemp[currentIndex] = bytesTosend;
 			currentIndex++;
 		}
-		_responseMessage[currentIndex] = SC_ETX;
+		_responseMessageTemp[currentIndex] = SC_ETX;
 		currentIndex++;
 		//calculate LRC
 		//skip header, start with SC_STX
 		int LRCIndex = 1;
-		LRC = _responseMessage[LRCIndex];
+		LRC = _responseMessageTemp[LRCIndex];
 		while(LRCIndex < currentIndex)
 		{
-			LRC ^= _responseMessage[LRCIndex];
+			LRC ^= _responseMessageTemp[LRCIndex];
 			LRCIndex++;
 		}
-		
-		return retbool;
+		_responseMessageTemp[currentIndex] = LRC;
+		_responseMessage = Arrays.copyOfRange(_responseMessageTemp, 1, _responseMessageTemp.length);
+		return _responseMessage;
 	}
 	
 	private String binaryToASCIIHex(char[] binaryData)

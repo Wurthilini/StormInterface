@@ -36,11 +36,17 @@ public class StormCommunication implements HidServicesListener {
     StormCommunication example = new StormCommunication();
     //example.executeExample();
     StormCommunicationManager comunicManager = new StormCommunicationManager();
-    boolean test = comunicManager.InitialiseStormUSBDevice();
+    boolean test = comunicManager.initialiseStormUSBDevice();
     DEVICE_INFO deviceInfo = new DEVICE_INFO();
     try {
-		deviceInfo = comunicManager.GetDeviceStatus(500);
-		System.out.printf("LED LEVEL -> %d \n", deviceInfo.led_brightness);
+    	for(int i=0;i<10;i++)
+    	{
+    		System.out.printf("set led level to -> %d \n", i);
+    		boolean test2 = comunicManager.setLedLevel(i);
+    		deviceInfo = comunicManager.getDeviceStatus();
+    		System.out.printf("LED LEVEL INFO -> %d \n", deviceInfo.led_brightness);
+    	}
+    	//deviceInfo = comunicManager.getDeviceStatus();
 	} catch (Exception e) {
 		// TODO Auto-generated catch block
 		e.printStackTrace();

@@ -81,11 +81,11 @@ public class MessageIncoming {
 					endPosition = incommingData.length;
 				else
 				{
-					endPosition = messageLength -3; //skip STX,ETX and LRC
+					endPosition = messageLength; //skip STX,ETX and LRC
 					this.commsState = COMMS_STATE.NEED_LRC;
 				}
-				this.accumulatedMessage = Arrays.copyOfRange(incommingData, startPosition, endPosition+3);
-				incommingData = Arrays.copyOfRange(incommingData, endPosition+4, incommingData.length);
+				this.accumulatedMessage = Arrays.copyOfRange(incommingData, startPosition, endPosition);
+				incommingData = Arrays.copyOfRange(incommingData, endPosition+1, incommingData.length);
 				if(!((COMMS_STATE.NEED_LRC == this.commsState) && (incommingData != null)))
 					break;
 			case NEED_LRC:
@@ -114,15 +114,14 @@ public class MessageIncoming {
 	
 	private int findSTX(byte[] incommingData)
 	{
-		int pos = -1;
 		int counter = 0;
 		for(byte currentByte : incommingData)
 		{
 			if(currentByte == SC_STX)
-				pos = counter;
+				return counter;
 			counter++;
 		}
-		return pos;
+		return -1;
 	}
 	
 }

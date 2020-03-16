@@ -10,6 +10,7 @@ public class MessageRequest {
 		UNKNOWN_ERROR(-1),
 		FIRST_ERROR(-9800);
 		public final int value;
+		
 		private ERROR_CODE(int value)
 		{
 			this.value = value;
@@ -32,6 +33,7 @@ public class MessageRequest {
 	    ENABLE_BSL(11),				//start downloader
 		SET_SERIAL_NO(13);			// command to set serial number
 		private final int value;
+		
 		private REQUEST_TYPE(int value)
 		{
 			this.value = value;
@@ -43,15 +45,15 @@ public class MessageRequest {
 	}
 	
 	//command parameters
-	int param1;
-	int param2;
-	int param3;
-	int param4;
-	int param5;
-	int param6;
-	int param7;
-	int param8;
-	byte ptrString;
-	String paramStr;
+	public byte param1;
+	public int param2;
+	public int param3;
+	public int param4;
+	public int param5;
+	public int param6;
+	public int param7;
+	public int param8;
+	public byte ptrString;
+	public String paramStr;
 	
 }

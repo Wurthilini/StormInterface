@@ -1,6 +1,7 @@
 package StormInterfaceApi;
 
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 
 import org.hid4java.HidDevice;
 import org.hid4java.HidException;
@@ -24,12 +25,12 @@ public class StormCommunicationManager extends StormCommunication{
 	private static final byte KEYMAT_REPORT_ID = 0x3f;
 	public static HidDevice hidDevice = null;
 	public DEVICE_INFO deviceInfo;
-	private ArrayList<MessageRequest> messageRequest = new ArrayList<MessageRequest>();
+	private ArrayList<MessageRequest> messageRequests = new ArrayList<MessageRequest>();
 	private ArrayList<byte[]> stormResponse = new ArrayList<byte[]>();
 	private ArrayList<MessageIncoming> messageArray = new ArrayList<MessageIncoming>();
 	private static final Integer PACKET_LENGTH = 64;
 	
-	boolean InitialiseStormUSBDevice() throws HidException
+	boolean initialiseStormUSBDevice() throws HidException
 	{
 		boolean retbool = false;
 		System.out.printf("vid %02x pid %02x \n", STORM_VENDOR_ID, STORM_PRODUCT_ID);
@@ -58,40 +59,68 @@ public class StormCommunicationManager extends StormCommunication{
 		return retbool;
 	}
 	
-	DEVICE_INFO GetDeviceStatus(int timeToWait) throws Exception
+	DEVICE_INFO getDeviceStatus() throws Exception
 	{
-		boolean initialised, retbool, sendMessageSuccess, readMessageSuccess = false;
+		boolean initialised = false, retbool = false, sendMessageSuccess = false, readMessageSuccess = false;
 		MessageRequest newRequest = new MessageRequest();
 		this.deviceInfo = new DEVICE_INFO();
 		newRequest.requestType = newRequest.requestType.DEVICE_STATUS;
 		if(hidDevice == null)
 		{
-			initialised = InitialiseStormUSBDevice();
+			initialised = initialiseStormUSBDevice();
 			if(!initialised)
 				throw new Exception("storm device may not be connected");
 		}
-		messageRequest.add(newRequest);
+		messageRequests.add(newRequest);
 		sendMessageSuccess = SendMessageRequest(newRequest);
 		if(sendMessageSuccess)
+		{
 			readMessageSuccess = readStormResponse();
+		}
 		else
 			 System.err.println(hidDevice.getLastErrorMessage());
 		return this.deviceInfo;
 	}
 	
-	boolean SendMessageRequest(MessageRequest request)
+	boolean setLedLevel(int ledLevel) throws Exception
+	{
+		boolean initialised = false, retbool = true, sendMessageSuccess = false, readMessageSuccess = false;
+		MessageRequest newRequest = new MessageRequest();
+		newRequest.requestType = newRequest.requestType.LED_BRIGHTNESS;
+		newRequest.param1 = (byte) ledLevel;
+		if(hidDevice == null)
+		{
+			initialised = initialiseStormUSBDevice();
+			if(!initialised)
+				throw new Exception("storm device may not be connected");
+		}
+		messageRequests.add(newRequest);
+		sendMessageSuccess = SendMessageRequest(newRequest);
+		if(sendMessageSuccess)
+			readMessageSuccess = readStormResponse();
+		else
+		{
+			System.err.println(hidDevice.getLastErrorMessage());
+			retbool = false;
+		}
+		retbool = readMessageSuccess ? true : false;
+		return retbool;
+	}
+	
+	boolean SendMessageRequest(MessageRequest request) throws InterruptedException
 	{
 		boolean retval = true;
 		//create Message
-		for(MessageRequest currentMessageRequest : messageRequest)
+		for(MessageRequest currentMessageRequest : messageRequests)
 		{
 			MessageCommand commandRequest = new MessageCommand();
 			byte[] fullPacket = new byte[PACKET_LENGTH-1];
-			commandRequest.buildRequest(currentMessageRequest, fullPacket);
+			fullPacket = commandRequest.buildRequest(currentMessageRequest, fullPacket);
 			int status = hidDevice.write(fullPacket, PACKET_LENGTH, KEYMAT_REPORT_ID);
 			if(status < 0)
 				retval = false;
 		}
+		this.messageRequests.clear();
 		return retval;
 	}
 	
