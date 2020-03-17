@@ -1,19 +1,7 @@
 package StormInterfaceApi;
 
-import org.hid4java.HidDevice;
-import org.hid4java.HidException;
-import org.hid4java.HidManager;
-import org.hid4java.HidServices;
-import org.hid4java.HidServicesListener;
-import org.hid4java.HidServicesSpecification;
-import org.hid4java.ScanMode;
-import org.hid4java.event.HidServicesEvent;
 
-import StormInterfaceApi.StormCommunicationManager.DEVICE_INFO;
-
-import java.util.concurrent.TimeUnit;
-
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import StormInterfaceApi.utilities.DeviceInfo;
 
 /**
  * <p>Demonstrate the USB HID interface using a Satoshi Labs Trezor</p>
@@ -22,35 +10,34 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  * Â 
  */
 public class StormCommunication{
-  private static final Integer VENDOR_ID = 0x2047;
+  /*private static final Integer VENDOR_ID = 0x2047;
   private static final Integer PRODUCT_ID = 0x9d0;
   private static final Integer PACKET_LENGTH = 64;
-  private static final String SERIAL_NUMBER = null;
+  private static final String SERIAL_NUMBER = null;*/
 
   public static void main(String[] args) throws Exception {
 
-    StormCommunication example = new StormCommunication();
-    //example.executeExample();
     StormCommunicationManager comunicManager = new StormCommunicationManager();
     boolean test = comunicManager.initialiseStormUSBDevice();
-    DEVICE_INFO deviceInfo = new DEVICE_INFO();
+   // DEVICE_INFO deviceInfo = new DEVICE_INFO();
+    DeviceInfo deviceInfo = new DeviceInfo();
     try {
     	for(int i=0;i<10;i++)
     	{
     		System.out.printf("set led level to -> %d \n", i);
     		boolean test2 = comunicManager.setLedLevel(i);
-    		deviceInfo = comunicManager.getDeviceStatus();
-    		System.out.printf("LED LEVEL INFO -> %d \n", deviceInfo.led_brightness);
+    		comunicManager.getDeviceStatus(deviceInfo);
+    		System.out.printf("LED LEVEL INFO -> %d \n", deviceInfo.getLedBrightness());
     	}
     	byte[] new_table={0x00, 0x04, 0x00, 0x05, 0x00, 0x06, 0x00, 0x07, 0x00, 0x08, 0x00, 0x09, 0x00, 0x10, 0x00, 0x11, 0x00, 0x12, 0x00, 0x13};
     	boolean test4 = comunicManager.setKeypadTable(2);
     	boolean test3 = comunicManager.loadCodeTable(new_table, 20);
     	boolean test5 = comunicManager.setSerialNumber("200187654321");
     	boolean test2 = comunicManager.writeDefaultToFlash();
-    	deviceInfo = comunicManager.getDeviceStatus();
-    	System.out.println(deviceInfo.serialNumber);
-    	System.out.println(deviceInfo.version);
-    	for(byte bytes : deviceInfo.keyCode)
+    	comunicManager.getDeviceStatus(deviceInfo);
+    	System.out.println(deviceInfo.getSerialNumber());
+    	System.out.println(deviceInfo.getVersion());
+    	for(byte bytes : deviceInfo.getKeyCode())
     		System.out.printf("%02x ", bytes);
     	boolean test6 = comunicManager.resetToFactoryDefault();
     } catch (Exception e) {

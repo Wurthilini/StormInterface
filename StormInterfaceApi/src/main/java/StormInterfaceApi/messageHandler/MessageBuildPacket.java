@@ -1,4 +1,4 @@
-package StormInterfaceApi.MessageHandler;
+package StormInterfaceApi.messageHandler;
 import java.util.ArrayList;
 import java.util.Arrays;
 

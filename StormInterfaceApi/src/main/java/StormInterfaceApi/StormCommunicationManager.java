@@ -1,39 +1,45 @@
 package StormInterfaceApi;
 
 import java.util.ArrayList;
-import java.util.concurrent.TimeUnit;
 
 import org.hid4java.HidDevice;
-import org.hid4java.HidException;
 import org.hid4java.HidManager;
 import org.hid4java.HidServices;
 import org.hid4java.HidServicesListener;
 import org.hid4java.HidServicesSpecification;
 import org.hid4java.ScanMode;
 
-import StormInterfaceApi.MessageHandler.MessageCommand;
-import StormInterfaceApi.MessageHandler.MessageHeader;
-import StormInterfaceApi.MessageHandler.MessageHeader.MESSAGE_ID;
-import StormInterfaceApi.MessageHandler.MessageIncoming;
-import StormInterfaceApi.MessageHandler.MessageRequest;
+import StormInterfaceApi.messageHandler.MessageCommand;
+import StormInterfaceApi.messageHandler.MessageHeader;
+import StormInterfaceApi.messageHandler.MessageIncoming;
+import StormInterfaceApi.messageHandler.MessageRequest;
+import StormInterfaceApi.utilities.DeviceInfo;
+import StormInterfaceApi.utilities.MessageID;
+import StormInterfaceApi.utilities.RequestType;
+import StormInterfaceApi.utilities.StormInterfaceException;
+import StormInterfaceApi.utilities.ErrorTypes.ReturnCodes;
 
-public class StormCommunicationManager extends StormCommunication{
+public class StormCommunicationManager{
 	private static final Integer STORM_VENDOR_ID = 0x2047;
 	private static final Integer STORM_PRODUCT_ID = 0x9d0;
 	private static final String STORM_SERIAL_NUMBER = null;
 	private static final byte CONFIGURATION_INTERFACE = 0x01;
 	private static final byte KEYMAT_REPORT_ID = 0x3f;
-	public static HidDevice hidDevice = null;
-	public DEVICE_INFO deviceInfo;
+	private HidDevice hidDevice = null;
+	private DeviceInfo deviceInfo = new DeviceInfo();
 	private ArrayList<MessageRequest> messageRequests = new ArrayList<MessageRequest>();
 	private ArrayList<byte[]> stormResponse = new ArrayList<byte[]>();
 	private ArrayList<MessageIncoming> messageArray = new ArrayList<MessageIncoming>();
 	private static final Integer PACKET_LENGTH = 64;
 	
-	boolean initialiseStormUSBDevice() throws HidException
+	public StormCommunicationManager()
+	{
+		
+	}
+	
+	public boolean initialiseStormUSBDevice() throws StormInterfaceException
 	{
 		boolean retbool = false;
-		System.out.printf("vid %02x pid %02x \n", STORM_VENDOR_ID, STORM_PRODUCT_ID);
 		try
 		{
 		    // Configure to use custom specification
@@ -50,194 +56,184 @@ public class StormCommunicationManager extends StormCommunication{
 		    this.hidDevice = hidServices.getHidDevice(STORM_VENDOR_ID, STORM_PRODUCT_ID, STORM_SERIAL_NUMBER, (byte) CONFIGURATION_INTERFACE);
 		    if(hidDevice!=null)
 		    	retbool = true;
+		    else
+		    	throw new StormInterfaceException("Unable to initialise StormDevice - is it connected?");
 		    return retbool;
 		}
 		catch(Exception e)
 		{
-			System.out.println("Unable to initialise StormDevice");
+			e.printStackTrace();
+			return false;
 		}
-		return retbool;
 	}
 	
-	DEVICE_INFO getDeviceStatus() throws Exception
+	public boolean getDeviceStatus(DeviceInfo deviceInformation) throws Exception
 	{
-		boolean initialised = false, retbool = false, sendMessageSuccess = false, readMessageSuccess = false;
+		boolean retbool = false, sendMessageSuccess = false, readMessageSuccess = false;
 		MessageRequest newRequest = new MessageRequest();
-		this.deviceInfo = new DEVICE_INFO();
-		newRequest.requestType = newRequest.requestType.DEVICE_STATUS;
+		this.deviceInfo = deviceInformation;
+		newRequest.setRequestType(RequestType.DEVICE_STATUS.value());
 		if(hidDevice == null)
-		{
-			initialised = initialiseStormUSBDevice();
-			if(!initialised)
-				throw new Exception("storm device may not be connected");
-		}
-		messageRequests.add(newRequest);
-		sendMessageSuccess = SendMessageRequest(newRequest);
-		if(sendMessageSuccess)
-		{
-			readMessageSuccess = readStormResponse();
-		}
-		else
-			 System.err.println(hidDevice.getLastErrorMessage());
-		return this.deviceInfo;
-	}
-	
-	boolean setLedLevel(int ledLevel) throws Exception
-	{
-		boolean initialised = false, retbool = true, sendMessageSuccess = false, readMessageSuccess = false;
-		if(hidDevice == null)
-		{
-			initialised = initialiseStormUSBDevice();
-			if(!initialised)
-				throw new Exception("storm device may not be connected");
-		}
-		MessageRequest newRequest = new MessageRequest();
-		newRequest.requestType = newRequest.requestType.LED_BRIGHTNESS;
-		newRequest.param1 = (byte) ledLevel;
+			try {
+				initialiseStormUSBDevice();
+			} catch (Exception e) {
+				e.printStackTrace();
+				return false;
+			}
 		messageRequests.add(newRequest);
 		sendMessageSuccess = SendMessageRequest(newRequest);
 		if(sendMessageSuccess)
 			readMessageSuccess = readStormResponse();
 		else
-		{
-			System.err.println(hidDevice.getLastErrorMessage());
-			retbool = false;
-		}
+			readMessageSuccess = false;
 		retbool = readMessageSuccess ? true : false;
 		return retbool;
 	}
 	
-	boolean setKeypadTable(int keycodeTable) throws Exception
+	public boolean setLedLevel(int ledLevel) throws Exception
 	{
-		boolean initialised = false, retbool = true, sendMessageSuccess = false, readMessageSuccess = false;
+		boolean retbool = true, sendMessageSuccess = false, readMessageSuccess = false;
+		if(hidDevice == null)
+			try {
+				initialiseStormUSBDevice();
+			} catch (Exception e) {
+				e.printStackTrace();
+				return false;
+			}
+		MessageRequest newRequest = new MessageRequest();
+		newRequest.setRequestType(RequestType.LED_BRIGHTNESS.value());
+		newRequest.setParam1((byte) ledLevel);
+		messageRequests.add(newRequest);
+		sendMessageSuccess = SendMessageRequest(newRequest);
+		if(sendMessageSuccess)
+			readMessageSuccess = readStormResponse();
+		else
+			readMessageSuccess = false;
+		retbool = readMessageSuccess ? true : false;
+		return retbool;
+	}
+	
+	public boolean setKeypadTable(int keycodeTable) throws Exception
+	{
+		boolean retbool = true, sendMessageSuccess = false, readMessageSuccess = false;
 		if(keycodeTable>2)
-			throw new Exception("Unknown KeypadType");
+			throw new StormInterfaceException("Unknown KeypadType");
 		if(hidDevice == null)
-		{
-			initialised = initialiseStormUSBDevice();
-			if(!initialised)
-				throw new Exception("storm device may not be connected");
-		}
+			try {
+				initialiseStormUSBDevice();
+			} catch (Exception e) {
+				e.printStackTrace();
+				return false;
+			}
 		MessageRequest newRequest = new MessageRequest();
-		newRequest.requestType = newRequest.requestType.KEYPAD_TYPE;
-		newRequest.param1 = (byte) keycodeTable;
+		newRequest.setRequestType(RequestType.KEYPAD_TYPE.value());
+		newRequest.setParam1((byte) keycodeTable);
 		messageRequests.add(newRequest);
 		sendMessageSuccess = SendMessageRequest(newRequest);
 		if(sendMessageSuccess)
 			readMessageSuccess = readStormResponse();
 		else
-		{
-			System.err.println(hidDevice.getLastErrorMessage());
-			retbool = false;
-		}
+			readMessageSuccess = false;
 		retbool = readMessageSuccess ? true : false;
 		return retbool;
 	}
 	
-	boolean loadCodeTable(byte[] keyCodes, int keyCodeLen) throws Exception
+	public boolean loadCodeTable(byte[] keyCodes, int keyCodeLen) throws Exception
 	{
-		boolean initialised = false, retbool = true, sendMessageSuccess = false, readMessageSuccess = false;
+		boolean retbool = true, sendMessageSuccess = false, readMessageSuccess = false;
 		if(keyCodes.length!=20)
-			throw new Exception("loadCodeTable requieres 20 keyCodes");
+			throw new StormInterfaceException("loadCodeTable requieres 20 keyCodes");
 		if(hidDevice == null)
-		{
-			initialised = initialiseStormUSBDevice();
-			if(!initialised)
-				throw new Exception("storm device may not be connected");
-		}
+			try {
+				initialiseStormUSBDevice();
+			} catch (Exception e) {
+				e.printStackTrace();
+				return false;
+			}
 		MessageRequest newRequest = new MessageRequest();
-		newRequest.requestType = newRequest.requestType.LOAD_NEW_TABLE;
-		newRequest.param1 = (byte) keyCodeLen;
-		newRequest.ptrString = keyCodes;
+		newRequest.setRequestType(RequestType.LOAD_NEW_TABLE.value());
+		newRequest.setParam1((byte) keyCodeLen);
+		newRequest.setPtrString(keyCodes);
 		messageRequests.add(newRequest);
 		sendMessageSuccess = SendMessageRequest(newRequest);
 		if(sendMessageSuccess)
 			readMessageSuccess = readStormResponse();
 		else
-		{
-			System.err.println(hidDevice.getLastErrorMessage());
-			retbool = false;
-		}
+			readMessageSuccess = false;
 		retbool = readMessageSuccess ? true : false;
 		return retbool;
 	}
 	
-	boolean writeDefaultToFlash() throws Exception
+	public boolean writeDefaultToFlash() throws Exception
 	{
-		boolean initialised = false, retbool = true, sendMessageSuccess = false, readMessageSuccess = false;
+		boolean retbool = true, sendMessageSuccess = false, readMessageSuccess = false;
 		if(hidDevice == null)
-		{
-			initialised = initialiseStormUSBDevice();
-			if(!initialised)
-				throw new Exception("storm device may not be connected");
-		}
+			try {
+				initialiseStormUSBDevice();
+			} catch (Exception e) {
+				e.printStackTrace();
+				return false;
+			}
 		MessageRequest newRequest = new MessageRequest();
-		newRequest.requestType = newRequest.requestType.WRITE_DEFAULT;
+		newRequest.setRequestType(RequestType.WRITE_DEFAULT.value());
 		messageRequests.add(newRequest);
 		sendMessageSuccess = SendMessageRequest(newRequest);
 		if(sendMessageSuccess)
 			readMessageSuccess = readStormResponse();
 		else
-		{
-			System.err.println(hidDevice.getLastErrorMessage());
-			retbool = false;
-		}
+			readMessageSuccess = false;
 		retbool = readMessageSuccess ? true : false;
 		return retbool;
 	}
 	
-	boolean resetToFactoryDefault() throws Exception
+	public boolean resetToFactoryDefault() throws Exception
 	{
-		boolean initialised = false, retbool = true, sendMessageSuccess = false, readMessageSuccess = false;
+		boolean retbool = true, sendMessageSuccess = false, readMessageSuccess = false;
 		if(hidDevice == null)
-		{
-			initialised = initialiseStormUSBDevice();
-			if(!initialised)
-				throw new Exception("storm device may not be connected");
-		}
+			try {
+				initialiseStormUSBDevice();
+			} catch (Exception e) {
+				e.printStackTrace();
+				return false;
+			}
 		MessageRequest newRequest = new MessageRequest();
-		newRequest.requestType = newRequest.requestType.RESET_TO_FACTORY_DEFAULT;
+		newRequest.setRequestType(RequestType.RESET_TO_FACTORY_DEFAULT.value());
 		messageRequests.add(newRequest);
 		sendMessageSuccess = SendMessageRequest(newRequest);
 		if(sendMessageSuccess)
 			readMessageSuccess = readStormResponse();
 		else
-		{
-			System.err.println(hidDevice.getLastErrorMessage());
-			retbool = false;
-		}
+			readMessageSuccess = false;
 		retbool = readMessageSuccess ? true : false;
 		return retbool;
 	}
 	
-	boolean setSerialNumber(String serialNumber) throws Exception
+	public boolean setSerialNumber(String serialNumber) throws Exception
 	{
-		boolean initialised = false, retbool = true, sendMessageSuccess = false, readMessageSuccess = false;
+		boolean retbool = true, sendMessageSuccess = false, readMessageSuccess = false;
 		if(hidDevice == null)
-		{
-			initialised = initialiseStormUSBDevice();
-			if(!initialised)
-				throw new Exception("storm device may not be connected");
-		}
+			try {
+				initialiseStormUSBDevice();
+			} catch (Exception e) {
+				e.printStackTrace();
+				return false;
+			}
 		if(serialNumber.isEmpty())
-			throw new Exception("serialNumber has to be unequal null");
+			throw new StormInterfaceException("No SerialNumber to set");
 		MessageRequest newRequest = new MessageRequest();
-		newRequest.requestType = newRequest.requestType.SET_SERIAL_NO;
-		newRequest.ptrString = serialNumber.getBytes();
+		newRequest.setRequestType(RequestType.SET_SERIAL_NO.value());
+		newRequest.setPtrString(serialNumber.getBytes());
 		messageRequests.add(newRequest);
 		sendMessageSuccess = SendMessageRequest(newRequest);
 		if(sendMessageSuccess)
 			readMessageSuccess = readStormResponse();
 		else
-		{
-			System.err.println(hidDevice.getLastErrorMessage());
-			retbool = false;
-		}
+			readMessageSuccess = false;
 		retbool = readMessageSuccess ? true : false;
 		return retbool;
 	}
 	
-	boolean SendMessageRequest(MessageRequest request) throws InterruptedException
+	private boolean SendMessageRequest(MessageRequest request) throws InterruptedException
 	{
 		boolean retval = true;
 		//create Message
@@ -246,15 +242,21 @@ public class StormCommunicationManager extends StormCommunication{
 			MessageCommand commandRequest = new MessageCommand();
 			byte[] fullPacket = new byte[PACKET_LENGTH-1];
 			fullPacket = commandRequest.buildRequest(currentMessageRequest, fullPacket);
-			int status = hidDevice.write(fullPacket, PACKET_LENGTH, KEYMAT_REPORT_ID);
-			if(status < 0)
-				retval = false;
+			try {
+				int status = hidDevice.write(fullPacket, PACKET_LENGTH, KEYMAT_REPORT_ID);
+				if(status < 0)
+					throw new StormInterfaceException(ReturnCodes.valueOf(-4));
+			} catch (Exception e) {
+				e.printStackTrace();
+				this.messageRequests.clear();
+				return false;
+			}
 		}
 		this.messageRequests.clear();
 		return retval;
 	}
 	
-	boolean readStormResponse() throws Exception
+	private boolean readStormResponse() throws Exception
 	{
 		int val;
 		boolean moreData = true, retval = true;
@@ -291,7 +293,7 @@ public class StormCommunicationManager extends StormCommunication{
 				retval = ProcessCommand(receivedMessage);
 				if(!(retval))
 				{
-					System.out.printf("Message %s failed \n", receivedMessage.messageID);
+					System.out.printf("Message %s failed \n", receivedMessage.getMessageID());
 					retval = false;
 				}
 			}
@@ -299,7 +301,7 @@ public class StormCommunicationManager extends StormCommunication{
 		return retval;
 	}
 	
-	boolean getMessageStatus()
+	private boolean getMessageStatus()
 	{
 		MessageIncoming accumMessage = new MessageIncoming();
 		for(byte[] response : this.stormResponse)
@@ -324,11 +326,11 @@ public class StormCommunicationManager extends StormCommunication{
 		return true; 
 	}
 	
-	public boolean ProcessCommand(MessageHeader receivedMessage) throws Exception
+	private boolean ProcessCommand(MessageHeader receivedMessage) throws Exception
 	{
 		boolean retbool = true;
 		//What type of message?
-		switch(receivedMessage.messageID)
+		switch(MessageID.valueOf(receivedMessage.getMessageID()))
 		{
 		case MID_ACK:
 		case MID_NAK:
@@ -343,7 +345,7 @@ public class StormCommunicationManager extends StormCommunication{
 		case MID_RESET_TO_FACTORY_DEFAULT:
 		case MID_SET_SERIAL_NO:
 		case MID_ENABLE_BSL:
-			if(!(receivedMessage.messageData[0]==0x00))
+			if(!(receivedMessage.getMessageData()[0]==0x00))
 				retbool = false;
 			break;
 		default:
@@ -352,29 +354,20 @@ public class StormCommunicationManager extends StormCommunication{
 		return retbool;
 	}
 	
-	public boolean processDeviceStatus(MessageHeader receivedMessage) throws Exception
+	private boolean processDeviceStatus(MessageHeader receivedMessage) throws Exception
 	{
 		boolean retbool = true;
 		MessageCommand commandStatus = new MessageCommand();
 		retbool = commandStatus.decodeMessage(receivedMessage);
-		this.deviceInfo.led_brightness = commandStatus.led_brightness;
-		this.deviceInfo.keypad_table = commandStatus.keypad_table;
-		this.deviceInfo.jack_status = commandStatus.jack_status;
-		this.deviceInfo.HV_status = commandStatus.hv_status;
-		this.deviceInfo.keyCode = commandStatus.keycodeTable;
-		this.deviceInfo.version = commandStatus.version;
-		this.deviceInfo.serialNumber = commandStatus.serialNo;
+		this.deviceInfo.setLedBrightness(commandStatus.getLedBrigthness());
+		this.deviceInfo.setKeypadTable(commandStatus.getKeypadTable());
+		this.deviceInfo.setJackStatus(commandStatus.getJackStatus());
+		this.deviceInfo.setHvStatus(commandStatus.getHVStatus());
+		this.deviceInfo.setKeyCode(commandStatus.getKeyCodeTable());
+		this.deviceInfo.setVersion(commandStatus.getVersion());
+		this.deviceInfo.setSerialNumber(commandStatus.getSerialNo());
 		return retbool;
 	}
 	
-	public static class DEVICE_INFO
-	{
-		int led_brightness;
-		int keypad_table;
-		int jack_status;
-		int HV_status;
-		byte[] keyCode = new byte[20];
-		String version;
-		String serialNumber;
-	}
+	
 }

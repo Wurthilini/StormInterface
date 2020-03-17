@@ -1,46 +1,16 @@
-package StormInterfaceApi.MessageHandler;
+package StormInterfaceApi.messageHandler;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import StormInterfaceApi.StormCommunicationManager;
+import StormInterfaceApi.utilities.MessageID;
 
 public class MessageHeader{
 	
-	public enum MESSAGE_ID
-	{
-		MID_DEVICE_STATUS(1),         	///Device status message
-		MID_LED_BRIGHTNESS(2),      		//< set led brightness
-		MID_RESERVED_1(3),					///MID_RESERVED_6
-		MID_RESERVED_2(4),				// MID_RESERVED_6
-		MID_LOAD_NEW_TABLE(5),				//load new key code table
-		MID_RESERVED_3(6),              // MID_RESERVED_6
-		MID_KEYPAD_TYPE(7),				// set keypad type
-		MID_RESERVED_4(8),					//notMID_RESERVED_6
-		MID_WRITE_DEFAULT(9),			    // Write defaults values from ram to flash
-		MID_RESET_TO_FACTORY_DEFAULT(10),    // reset the setting to factory default
-		MID_RESERVED_5(11),				//MID_RESERVED_6
-		MID_ENABLE_BSL(12),				//start downloader
-		MID_RESERVED_6(13),			//MID_RESERVED_6
-		MID_SET_SERIAL_NO(14),				// command to set serial number
-		MID_ACK(15),
-		MID_NAK(16),
-		MID_EXTRA(17);
-		private final int value;
-		private MESSAGE_ID(int value)
-		{
-			this.value = value;
-		}
-		public int getValue()
-		{
-			return this.value;
-		}
-	}
 	private final Integer MAX_MESSAGE_DATA = 1024;
-	public MESSAGE_ID messageID;
-	private int messageVersion;
+	private int messageID;
 	private int dataLength;
-	public byte[] messageData = new byte[MAX_MESSAGE_DATA];
+	private byte[] messageData = new byte[MAX_MESSAGE_DATA];
 	
 	public boolean decodeMessage(MessageIncoming incomingMessage)
 	{
@@ -48,10 +18,10 @@ public class MessageHeader{
 		switch(incomingMessage.completeStatus)
 		{
 		case MESSAGE_IS_ACK:
-			this.messageID = MESSAGE_ID.MID_ACK;
+			this.messageID = MessageID.MID_ACK.value();
 			break;
 		case MESSAGE_IS_NAK:
-			this.messageID = MESSAGE_ID.MID_NAK;
+			this.messageID = MessageID.MID_NAK.value();
 			break;
 		default:
 			retbool = decodeMessage(incomingMessage.accumulatedMessage, incomingMessage.accumulatedMessage.length);
@@ -68,8 +38,7 @@ public class MessageHeader{
 		int fieldSize;
 		try
 		{
-			messageVersion	= 0;
-			messageID		= null;
+			this.messageID = -1;
 			dataLength		= 0;
 			if(rawLength < 3)
 				throw new Exception("message is too short");
@@ -78,8 +47,7 @@ public class MessageHeader{
 			retval = ASCIIHexToBinary(Arrays.copyOfRange(rawMessage, idx, fieldSize), fieldSize, conversionOutput);
 			if(retval < 0)
 				throw new Exception("Retrieved Invalid Message ID");
-			//this.messageID = conversionOutput.get(0);
-			this.messageID = MESSAGE_ID.values()[conversionOutput.get(0)-1];
+			this.messageID = conversionOutput.get(0);
 			conversionOutput.clear();
 			//parse messageLength
 			idx += fieldSize;
@@ -96,6 +64,16 @@ public class MessageHeader{
 			System.out.println("Decode Message failed");
 		}
 		return retbool;
+	}
+	
+	public int getMessageID()
+	{
+		return this.messageID;
+	}
+	
+	public byte[] getMessageData()
+	{
+		return this.messageData;
 	}
 	
 	private int ASCIIHexToBinary(byte[] asciiIn, int len, ArrayList<Character> out)
