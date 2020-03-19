@@ -70,25 +70,17 @@ public class MessageCommand {
 		int fieldSize;
 		//Get Error Code
 		fieldSize = 1;
-		System.out.println("hier");
 		this.lastErrorCode = (int) receivedMessage.getMessageData()[idx];
-		System.out.println("hieer2");
 		if(0> this.lastErrorCode)
 			throw new Exception("Inbalid Keypad Error");
 		idx += fieldSize;
 		//get led brightness
-		System.out.println("hier3");
-		System.out.println(idx);
-		for(byte bytes : receivedMessage.getMessageData())
-			System.out.printf("%02x \n", bytes);
 		this.led_brightness = (int) receivedMessage.getMessageData()[idx];
 		idx += fieldSize;
 		//get inverse Mode
-		System.out.println("hier4");
 		this.keypad_table = (int) receivedMessage.getMessageData()[idx];
 		idx += fieldSize;
 		//get contrast Level
-		System.out.println("hier5");
 		this.jack_status = (int) receivedMessage.getMessageData()[idx];
 		idx += fieldSize;
 		//get backlight 
