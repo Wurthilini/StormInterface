@@ -2,29 +2,33 @@ package StormInterfaceApi;
 
 
 import StormInterfaceApi.deviceManager.GlobalKeyListener;
+import StormInterfaceApi.deviceManager.Talker;
+import StormInterfaceApi.utilities.CustomisedCodeTable;
 import StormInterfaceApi.utilities.DeviceInfo;
+import StormInterfaceApi.utilities.UsbKeyCodes;
 
 public class StormCommunication{
 
   public static void main(String[] args) throws Exception {
+	//Talker talker = new Talker();
+	//talker.playSound("../StormInterfaceApi/audio/Cartoon-10.wav");
     StormCommunicationManager comunicManager = new StormCommunicationManager();
     comunicManager.initialiseStormUSBDevice();
 	DeviceInfo deviceInfo = new DeviceInfo();
 	try {
 		boolean retbool;
-		for(int i=0;i<10;i++)
+		retbool = comunicManager.assignKeypadTable();
+		/*for(int i=0;i<10;i++)
 	    {
 	    	System.out.printf("set led level to -> %d \n", i);
 	    	retbool = comunicManager.setLedLevel(i);
-	    }
-	    //byte[] new_table={0x00, 0x04, 0x00, 0x05, 0x00, 0x06, 0x00, 0x07, 0x00, 0x08, 0x00, 0x09, 0x00, 0x10, 0x00, 0x11, 0x00, 0x12, 0x00, 0x13};
-	    //retbool = comunicManager.setKeypadTable(2);
-	    //retbool = comunicManager.loadCodeTable(new_table, 20);
+	    }*/
 	    retbool = comunicManager.setSerialNumber("200187654321");
 	    retbool = comunicManager.writeDefaultToFlash();
 	    comunicManager.getDeviceStatus(deviceInfo);
 	    System.out.println(deviceInfo.getSerialNumber());
 	    System.out.println(deviceInfo.getVersion());
+	    System.out.println(deviceInfo.getJackStatus());
 	    for(byte bytes : deviceInfo.getKeyCode())
 	    	System.out.printf("%02x ", bytes);
 	    //retbool = comunicManager.resetToFactoryDefault();

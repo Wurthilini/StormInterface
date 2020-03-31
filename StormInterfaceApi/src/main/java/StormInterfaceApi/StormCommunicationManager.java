@@ -1,81 +1,66 @@
 package StormInterfaceApi;
 
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 import java.util.ArrayList;
-import java.util.concurrent.TimeUnit;
 
 import org.hid4java.HidDevice;
 import org.hid4java.HidManager;
 import org.hid4java.HidServices;
-import org.hid4java.HidServicesListener;
-import org.hid4java.HidServicesSpecification;
-import org.hid4java.ScanMode;
-import org.hid4java.event.HidServicesEvent;
 
+
+import StormInterfaceApi.deviceManager.PortListener;
 import StormInterfaceApi.messageHandler.MessageCommand;
 import StormInterfaceApi.messageHandler.MessageHeader;
 import StormInterfaceApi.messageHandler.MessageIncoming;
 import StormInterfaceApi.messageHandler.MessageRequest;
+import StormInterfaceApi.utilities.CustomisedCodeTable;
 import StormInterfaceApi.utilities.DeviceInfo;
 import StormInterfaceApi.utilities.MessageID;
 import StormInterfaceApi.utilities.RequestType;
 import StormInterfaceApi.utilities.StormInterfaceException;
+import StormInterfaceApi.utilities.UsbKeyCodes;
 import StormInterfaceApi.utilities.ErrorTypes.ReturnCodes;
+import propertiesConfig.CustomisedTableCodeConfig;
+import propertiesConfig.PropertiesConfig;
+import propertiesConfig.PropertiesConfigReader;
 
-public class StormCommunicationManager implements HidServicesListener{
-	private static final Integer STORM_VENDOR_ID = 0x2047;
-	private static final Integer STORM_PRODUCT_ID = 0x9d0;
-	private static final String STORM_SERIAL_NUMBER = null;
+public class StormCommunicationManager{
+	protected static final Integer STORM_VENDOR_ID = 0x2047;
+	protected static final Integer STORM_PRODUCT_ID = 0x9d0;
+	protected static final String STORM_SERIAL_NUMBER = null;
 	private static final byte CONFIGURATION_INTERFACE = 0x01;
 	private static final byte KEYMAT_REPORT_ID = 0x3f;
-	private HidDevice hidDevice = null;
-	private HidServices hidServices = null;
+	private PropertiesConfig propertiesConfig;
+	protected static HidDevice hidDevice;
+	protected CustomisedCodeTable customisedCodeTable;
 	private DeviceInfo deviceInfo = new DeviceInfo();
 	private ArrayList<MessageRequest> messageRequests = new ArrayList<MessageRequest>();
 	private ArrayList<byte[]> stormResponse = new ArrayList<byte[]>();
 	private ArrayList<MessageIncoming> messageArray = new ArrayList<MessageIncoming>();
 	private static final Integer PACKET_LENGTH = 64;
 	
-	public StormCommunicationManager()
+	public StormCommunicationManager() throws Exception
 	{
-		
+		this.propertiesConfig = new PropertiesConfigReader().readPropertiesConfig();
 	}
 	
-	public void initialiseStormUSBDevice() throws StormInterfaceException
+	public void initialiseStormUSBDevice() throws Exception
 	{
 		boolean retbool = false;
+		HidDevice hidDevice = null;
 		// Configure to use custom specification
-		HidServicesSpecification hidServicesSpecification = new HidServicesSpecification();
-		hidServicesSpecification.setAutoShutdown(true);
-		hidServicesSpecification.setScanInterval(500);
-		hidServicesSpecification.setPauseInterval(5000);
-		hidServicesSpecification.setScanMode(ScanMode.SCAN_AT_FIXED_INTERVAL_WITH_PAUSE_AFTER_WRITE);
-		this.hidServices = HidManager.getHidServices(hidServicesSpecification);
-        this.hidServices.addHidServicesListener(this);
-		this.hidServices.start();
-		retbool = init();
+		HidServices hidServices = HidManager.getHidServices();
+		hidServices.start();
+		hidDevice = init(hidServices, hidDevice);
+		retbool = (hidDevice != null);
+		StormCommunicationManager.hidDevice = hidDevice;
 		if(!retbool)
 		{
 			System.out.printf("Waiting for Storm Device to get plugged in.%n");
-			sleepUninterruptibly(2);
+			PortListener portListener = new PortListener(2);
+			StormCommunicationManager.hidDevice = portListener.getHidDevice();
 		}
 	}
-	
-    public void hidDeviceAttached(HidServicesEvent event) {
-
-        //System.out.println("Device attached: " + event);
-        if(event.getHidDevice().isVidPidSerial(STORM_VENDOR_ID, STORM_PRODUCT_ID, STORM_SERIAL_NUMBER))
-        	init();
-    }
-
-    public void hidDeviceDetached(HidServicesEvent event) {
-        //System.err.println("Device detached: " + event);
-    }
-
-    public void hidFailure(HidServicesEvent event) {
-        //System.err.println("HID failure: " + event);
-    }
 	
 	public boolean getDeviceStatus(DeviceInfo deviceInformation) throws Exception
 	{
@@ -109,10 +94,118 @@ public class StormCommunicationManager implements HidServicesListener{
 		return retbool;
 	}
 	
+	public boolean assignKeypadTable() throws Exception
+	{
+		switch(this.propertiesConfig.getKeypadTableConfig().getKeypadTableID())
+		{
+		case 0:
+			customisedCodeTable = new CustomisedCodeTable(0);
+			break;
+		case 1:
+			customisedCodeTable = new CustomisedCodeTable(1);
+			break;
+		case 2:
+			customisedCodeTable = new CustomisedCodeTable(2);
+			for(CustomisedTableCodeConfig currentTableCodeConfig : this.propertiesConfig.getCustomisedTableCodeConfig())
+			{
+				byte usbUsageCode;
+				byte modifierCode = 0;
+				boolean modifierCodeEmpty = true;
+				try
+				{
+					usbUsageCode = UsbKeyCodes.valueOf(currentTableCodeConfig.getUsbUsageName()).value();
+				}
+				catch(Exception e)
+				{
+					throw new StormInterfaceException("Unknown usbUsageCode in " + currentTableCodeConfig.getID() + " with Name " + currentTableCodeConfig.getUsbUsageName());
+				}
+				if(!currentTableCodeConfig.getModifierName().isEmpty())
+				{
+					try
+					{
+						modifierCode = UsbKeyCodes.valueOf(currentTableCodeConfig.getModifierName()).value();
+					}
+					catch(Exception e)
+					{
+						throw new StormInterfaceException("Unknown ModifierName in " + currentTableCodeConfig.getID() + " with Name " + currentTableCodeConfig.getModifierName());
+					}
+					modifierCodeEmpty = false;
+				}
+				switch(currentTableCodeConfig.getID())
+				{
+				case "Volume":
+						if(modifierCodeEmpty)
+							customisedCodeTable.setVolume(usbUsageCode);
+						else
+							customisedCodeTable.setVolume(usbUsageCode, modifierCode);
+						break;
+				case "Left":
+					if(modifierCodeEmpty)
+						customisedCodeTable.setLeft(usbUsageCode);
+					else
+						customisedCodeTable.setLeft(usbUsageCode, modifierCode);
+					break;
+				case "Right":
+					if(modifierCodeEmpty)
+						customisedCodeTable.setRight(usbUsageCode);
+					else
+						customisedCodeTable.setRight(usbUsageCode, modifierCode);
+					break;
+				case "Down":
+					if(modifierCodeEmpty)
+						customisedCodeTable.setDown(usbUsageCode);
+					else
+						customisedCodeTable.setDown(usbUsageCode, modifierCode);
+					break;
+				case "Up":
+					if(modifierCodeEmpty)
+						customisedCodeTable.setUp(usbUsageCode);
+					else
+						customisedCodeTable.setUp(usbUsageCode, modifierCode);
+					break;
+				case "Enter":
+					if(modifierCodeEmpty)
+						customisedCodeTable.setEnter(usbUsageCode);
+					else
+						customisedCodeTable.setEnter(usbUsageCode, modifierCode);
+					break;
+				case "Horizontal":
+					if(modifierCodeEmpty)
+						customisedCodeTable.setHorizontal(usbUsageCode);
+					else
+						customisedCodeTable.setHorizontal(usbUsageCode, modifierCode);
+					break;
+				case "Vertical":
+					if(modifierCodeEmpty)
+						customisedCodeTable.setVertical(usbUsageCode);
+					else
+						customisedCodeTable.setVertical(usbUsageCode, modifierCode);
+					break;
+				case "JackIn":
+					if(modifierCodeEmpty)
+						customisedCodeTable.setJackIn(usbUsageCode);
+					else
+						customisedCodeTable.setJackIn(usbUsageCode, modifierCode);
+					break;
+				case "JackOut":
+					if(modifierCodeEmpty)
+						customisedCodeTable.setJackOut(usbUsageCode);
+					else
+						customisedCodeTable.setJackOut(usbUsageCode, modifierCode);
+					break;
+				default:
+					throw new StormInterfaceException("Unknown CustomisedTableCode ID " + currentTableCodeConfig.getID());
+				}
+			}
+			customisedCodeTable.loadCodeTable();
+		}
+		return true;
+	}
+	
 	public boolean setKeypadTable(int keycodeTable) throws Exception
 	{
 		boolean retbool = true, sendMessageSuccess = false, readMessageSuccess = false;
-		if(keycodeTable>2)
+		if(keycodeTable>2 || keycodeTable<0)
 			throw new StormInterfaceException("Unknown KeypadType");
 		MessageRequest newRequest = new MessageRequest();
 		newRequest.setRequestType(RequestType.KEYPAD_TYPE.value());
@@ -194,12 +287,11 @@ public class StormCommunicationManager implements HidServicesListener{
 		return retbool;
 	}
 	
-	private boolean init()
+	protected HidDevice init(HidServices hidServices, HidDevice hidDevice)
 	{
 		// Open the device device by Vendor ID and Product ID with wildcard serial number
-		this.hidDevice = this.hidServices.getHidDevice(STORM_VENDOR_ID, STORM_PRODUCT_ID, STORM_SERIAL_NUMBER, (byte) CONFIGURATION_INTERFACE);
-		boolean retbool = this.hidDevice == null ? false : true;
-		return retbool;
+		hidDevice = hidServices.getHidDevice(STORM_VENDOR_ID, STORM_PRODUCT_ID, STORM_SERIAL_NUMBER, (byte) CONFIGURATION_INTERFACE);
+		return hidDevice;
 	}
 	
 	private boolean SendMessageRequest(MessageRequest request) throws InterruptedException
@@ -212,7 +304,7 @@ public class StormCommunicationManager implements HidServicesListener{
 			byte[] fullPacket = new byte[PACKET_LENGTH-1];
 			fullPacket = commandRequest.buildRequest(currentMessageRequest, fullPacket);
 			try {
-				int status = hidDevice.write(fullPacket, PACKET_LENGTH, KEYMAT_REPORT_ID);
+				int status = StormCommunicationManager.hidDevice.write(fullPacket, PACKET_LENGTH, KEYMAT_REPORT_ID);
 				if(status < 0)
 					throw new StormInterfaceException(ReturnCodes.valueOf(-4));
 			} catch (Exception e) {
@@ -234,21 +326,16 @@ public class StormCommunicationManager implements HidServicesListener{
 		{
 			byte[] data = new byte[PACKET_LENGTH];
 		    // This method will now block for 500ms or until data is read
-		    val = hidDevice.read(data, 500);
+		    val = StormCommunicationManager.hidDevice.read(data, 500);
 		    switch(val)
 		    {
 		    case -1:
-		          System.err.println(hidDevice.getLastErrorMessage());
+		          System.err.println(StormCommunicationManager.hidDevice.getLastErrorMessage());
 		          break;
 		    case 0:
 		          moreData = false;
 		          break;
 		    default:
-		    	/*System.out.print("[");
-		    	for(byte currentbyte : data)
-		    		System.out.printf(" %x",currentbyte);
-		    	System.out.print("]");
-		    	System.out.println();*/
 		    	this.stormResponse.add(data);
 		    	break;
 		    }
@@ -337,28 +424,4 @@ public class StormCommunicationManager implements HidServicesListener{
 		this.deviceInfo.setSerialNumber(commandStatus.getSerialNo());
 		return retbool;
 	}
-	
-    public void sleepUninterruptibly(long sleepFor) {
-    	TimeUnit unit = TimeUnit.SECONDS;
-        boolean interrupted = false;
-        try {
-            long remainingNanos = unit.toNanos(sleepFor);
-            long end = System.nanoTime() + remainingNanos;
-            while (true) {
-                try {
-                	if(this.hidDevice!=null)
-                		return;
-                	else
-                		NANOSECONDS.sleep(unit.toNanos(sleepFor));
-                } catch (InterruptedException e) {
-                    interrupted = true;
-                    remainingNanos = end - System.nanoTime();
-                }
-            }
-        } finally {
-            if (interrupted) {
-                //Thread.currentThread().interrupt();
-            }
-        }
-    }
 }

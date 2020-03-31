@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<propertiesConfig>
+	<ledLevel level="1" />
+	<serialNumber id="123456789" />
+	<keypadTable id="2" />
+	<!-- 0=Default, 1=Alternate, 2=Customised -->
+	<!-- If CodeTable id is 2, specify your customised code table here ... -->
+	<customisedTableCodes>
+		<customisedTableCode id="Volume" usbUsageName="usbUsageA" modifierName="" />
+		<customisedTableCode id="Left" usbUsageName="usbUsageB" modifierName="usbUsageRightShift"  />
+		<customisedTableCode id="Right" usbUsageName="usbUsageC" modifierName="" />
+		<customisedTableCode id="Down" usbUsageName="usbUsageD" modifierName="usbUsageRightShift" />
+		<customisedTableCode id="Up" usbUsageName="usbUsageE" modifierName="" />
+		<customisedTableCode id="Enter" usbUsageName="usbUsageF" modifierName="usbUsageRightShift" />
+		<customisedTableCode id="Horizontal" usbUsageName="usbUsageG" modifierName="" />
+		<customisedTableCode id="Vertical" usbUsageName="usbUsageH" modifierName="usbUsageRightShift" />
+		<!--<customisedTableCode id="JackIn" usbUsageName="usbUsageI" modifierName="" />
+		<customisedTableCode id="JackOut" usbUsageName="usbUsageJ" modifierName="usbUsageRightShift" />-->
+	</customisedTableCodes>
+</propertiesConfig>
+<!--
+0
+00 6c 00 50 00 4f 00 51 00 52 00 28 00 6d 00 6e 00 6a 00 6b
+1
+00 6c 00 50 00 4f 00 51 00 52 00 28 00 6d 00 6e 00 6a 00 6b 
+-->
