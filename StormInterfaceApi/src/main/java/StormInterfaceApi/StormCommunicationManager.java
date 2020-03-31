@@ -78,19 +78,26 @@ public class StormCommunicationManager{
 		return retbool;
 	}
 	
-	public boolean setLedLevel(int ledLevel) throws Exception
+	public boolean setLedLevel() throws Exception
 	{
 		boolean retbool = true, sendMessageSuccess = false, readMessageSuccess = false;
-		MessageRequest newRequest = new MessageRequest();
-		newRequest.setRequestType(RequestType.LED_BRIGHTNESS.value());
-		newRequest.setParam1((byte) ledLevel);
-		messageRequests.add(newRequest);
-		sendMessageSuccess = SendMessageRequest(newRequest);
-		if(sendMessageSuccess)
-			readMessageSuccess = readStormResponse();
-		else
-			readMessageSuccess = false;
-		retbool = readMessageSuccess ? true : false;
+		int ledlevel = 0;
+		for(int i=0;i<=10;i++)
+		{
+			ledlevel = i;
+			if(i == 10)
+				ledlevel = this.propertiesConfig.getLedLevelConfig().getLedLevel();
+			MessageRequest newRequest = new MessageRequest();
+			newRequest.setRequestType(RequestType.LED_BRIGHTNESS.value());
+			newRequest.setParam1((byte) ledlevel);
+			messageRequests.add(newRequest);
+			sendMessageSuccess = SendMessageRequest(newRequest);
+			if(sendMessageSuccess)
+				readMessageSuccess = readStormResponse();
+			else
+				readMessageSuccess = false;
+			retbool = readMessageSuccess ? true : false;
+		}
 		return retbool;
 	}
 	
@@ -269,8 +276,9 @@ public class StormCommunicationManager{
 		return retbool;
 	}
 	
-	public boolean setSerialNumber(String serialNumber) throws Exception
+	public boolean setSerialNumber() throws Exception
 	{
+		String serialNumber = this.propertiesConfig.getSerialNumberConfig().getSerialNumberID();
 		boolean retbool = true, sendMessageSuccess = false, readMessageSuccess = false;
 		if(serialNumber.isEmpty())
 			throw new StormInterfaceException("No SerialNumber to set");

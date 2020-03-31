@@ -17,13 +17,9 @@ public class StormCommunication{
 	DeviceInfo deviceInfo = new DeviceInfo();
 	try {
 		boolean retbool;
+		retbool = comunicManager.setLedLevel();
 		retbool = comunicManager.assignKeypadTable();
-		/*for(int i=0;i<10;i++)
-	    {
-	    	System.out.printf("set led level to -> %d \n", i);
-	    	retbool = comunicManager.setLedLevel(i);
-	    }*/
-	    retbool = comunicManager.setSerialNumber("200187654321");
+	    retbool = comunicManager.setSerialNumber();
 	    retbool = comunicManager.writeDefaultToFlash();
 	    comunicManager.getDeviceStatus(deviceInfo);
 	    System.out.println(deviceInfo.getSerialNumber());
