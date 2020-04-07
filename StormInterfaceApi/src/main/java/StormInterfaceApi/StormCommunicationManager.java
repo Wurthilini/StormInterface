@@ -27,6 +27,8 @@ import propertiesConfig.PropertiesConfigReader;
 public class StormCommunicationManager{
 	protected static final Integer STORM_VENDOR_ID = 0x2047;
 	protected static final Integer STORM_PRODUCT_ID = 0x9d0;
+	protected static final Integer STORM_VENDOR_ID_AUDIO = 0x0D8c;
+	protected static final Integer STORM_PRODUCT_ID_AUDIO = 0x0170;
 	protected static final String STORM_SERIAL_NUMBER = null;
 	private static final byte CONFIGURATION_INTERFACE = 0x01;
 	private static final byte KEYMAT_REPORT_ID = 0x3f;

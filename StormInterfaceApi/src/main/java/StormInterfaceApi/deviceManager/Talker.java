@@ -1,75 +1,117 @@
 package StormInterfaceApi.deviceManager;
 
 import java.io.File;
-import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
-import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.DataLine;
-import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.Clip;
+import javax.sound.sampled.Line;
+import javax.sound.sampled.Mixer;
 import javax.sound.sampled.SourceDataLine;
+import javax.sound.sampled.AudioFileFormat.Type;
+import javax.sound.sampled.Mixer.Info;
 
-public class Talker {
+import com.sun.speech.freetts.Voice;
+import com.sun.speech.freetts.VoiceManager;
+import com.sun.speech.freetts.audio.AudioPlayer;
+import com.sun.speech.freetts.audio.SingleFileAudioPlayer;
 
-    private final int BUFFER_SIZE = 128000;
-    private File soundFile;
-    private AudioInputStream audioStream;
-    private AudioFormat audioFormat;
-    private SourceDataLine sourceLine;
+import StormInterfaceApi.utilities.StormInterfaceException; 
 
-    /**
-     * @param filename the name of the file that is going to be played
-     */
-    public void playSound(String filename){
+  
+public class Talker { 
+  
+	//private Synthesizer synthesizer; 
+	private AudioPlayer audioPlayer = null;
+	private final String voiceName = "kevin16";
+	private String buttonText;
+	private VoiceManager voiceManager;
+	private Voice voice;
+	private File fileIn;
+	
+	public Talker(String button) throws Exception
+	{
+		this.voiceManager = VoiceManager.getInstance();
+		this.voice = voiceManager.getVoice(this.voiceName);
+		this.voice.allocate();
+		if(this.voice==null)
+			throw new StormInterfaceException("Cannot find voice named " + this.voiceName + ". Please specify a different voice.");
+		switch(button)
+		{
+		case "Left":
+			this.buttonText = "Left";
+			break;
+		case "Right":
+			this.buttonText = "Right";
+			break;
+		case "Up":
+			this.buttonText = "Up";
+			break;
+		case "Down":
+			this.buttonText = "Down";
+			break;
+		case "JackIn":
+			this.buttonText = "JackIn";
+			break;
+		case "JackOut":
+			this.buttonText = "JackOut";
+			break;
+		case "testStormAudio":
+			this.buttonText = "testStormAudio";
+			break;
+		default:
+			throw new StormInterfaceException("Unknown Button Text: " + this.buttonText + ".");
+		}
+		saveFile();
+	}
+	
+	private void saveFile() throws Exception
+	{
+		boolean waveFileAlreadyExists = new File("../StormInterfaceApi/audio/", this.buttonText + ".wav").exists();
+		String outputDir = "../StormInterfaceApi/audio/" + this.buttonText;
+		if(!waveFileAlreadyExists || this.buttonText != "testStormAudio")
+		{
+			this.audioPlayer = new SingleFileAudioPlayer(outputDir,Type.WAVE);
+			this.voice.setAudioPlayer(audioPlayer);
+			this.voice.speak(this.buttonText);
+			this.voice.deallocate();
+			this.audioPlayer.close();
+		}
+		this.fileIn = new File(outputDir + ".wav"); 
+		loadWavFile();
+	}
+	
+	private void loadWavFile() throws Exception
+	{
+		AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(this.fileIn);
+		List<Mixer.Info> fittingSoundDevices = filterDevices();
+		System.out.println(fittingSoundDevices.get(2));
+		try
+		{
+			Clip line = AudioSystem.getClip(fittingSoundDevices.get(2));
+			line.open(audioInputStream);
+			line.start();
+			line.drain();
+			audioInputStream.close();
+		}
+		catch(Exception e)
+		{
+			System.out.println(e.getMessage());
+		}
+	}
 
-        String strFilename = filename;
-
-        try {
-            soundFile = new File(strFilename);
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.exit(1);
-        }
-
-        try {
-            audioStream = AudioSystem.getAudioInputStream(soundFile);
-        } catch (Exception e){
-            e.printStackTrace();
-            System.exit(1);
-        }
-
-        audioFormat = audioStream.getFormat();
-
-        DataLine.Info info = new DataLine.Info(SourceDataLine.class, audioFormat);
-        try {
-            sourceLine = (SourceDataLine) AudioSystem.getLine(info);
-            sourceLine.open(audioFormat);
-        } catch (LineUnavailableException e) {
-            e.printStackTrace();
-            System.exit(1);
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.exit(1);
-        }
-
-        sourceLine.start();
-
-        int nBytesRead = 0;
-        byte[] abData = new byte[BUFFER_SIZE];
-        while (nBytesRead != -1) {
-            try {
-                nBytesRead = audioStream.read(abData, 0, abData.length);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            if (nBytesRead >= 0) {
-                @SuppressWarnings("unused")
-                int nBytesWritten = sourceLine.write(abData, 0, nBytesRead);
-            }
-        }
-
-        sourceLine.drain();
-        sourceLine.close();
-    }
-}
+	private List<Mixer.Info> filterDevices() {
+		Line.Info playbackLine = new Line.Info(SourceDataLine.class);
+	    List<Mixer.Info> result = new ArrayList<Mixer.Info>();
+	    Info[] infos = AudioSystem.getMixerInfo();
+	    for (Mixer.Info info : infos) {
+	        Mixer mixer = AudioSystem.getMixer(info);
+	        if (mixer.isLineSupported(playbackLine)) {
+	            result.add(info);
+	        }
+	    }
+	    return result;
+	}
+} 

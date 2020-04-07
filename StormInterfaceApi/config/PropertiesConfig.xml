@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <propertiesConfig>
 	<ledLevel level="1" />
-	<serialNumber id="123456789" />
+	<serialNumber id="200187654321" />
 	<keypadTable id="2" />
 	<!-- 0=Default, 1=Alternate, 2=Customised -->
 	<!-- If CodeTable id is 2, specify your customised code table here ... -->
