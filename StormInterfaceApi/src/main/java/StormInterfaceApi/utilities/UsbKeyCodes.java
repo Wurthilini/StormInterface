@@ -161,4 +161,9 @@ public enum UsbKeyCodes {
 		for(UsbKeyCodes keyCodeID : UsbKeyCodes.values())
 			map.put(keyCodeID.value(), keyCodeID);
 	}
+	
+	public static UsbKeyCodes valueOf(byte usbUsageCode)
+	{
+		return map.get(usbUsageCode);
+	}
 }

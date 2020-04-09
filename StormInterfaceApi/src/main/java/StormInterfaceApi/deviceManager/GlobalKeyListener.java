@@ -9,14 +9,13 @@ import org.jnativehook.NativeHookException;
 import org.jnativehook.keyboard.NativeKeyEvent;
 import org.jnativehook.keyboard.NativeKeyListener;
 
+import StormInterfaceApi.deviceManager.Talker.JACKSTATUS;
+
 
 public class GlobalKeyListener implements NativeKeyListener{
 	private Talker talker;
-	
-	public GlobalKeyListener()
-	{
-		
-	}
+	private final byte JACKIN = 0x005D; //VK F15
+	private final byte JACKOUT = 0x0063; //VK F16
 	
 	public GlobalKeyListener(Talker talker)
 	{
@@ -26,14 +25,20 @@ public class GlobalKeyListener implements NativeKeyListener{
 	@Override
 	public void nativeKeyPressed(NativeKeyEvent e) {
 		System.out.println("Key Pressed: " + NativeKeyEvent.getKeyText(e.getKeyCode()));
-		System.out.println("-> " + e.getKeyCode());
-		System.out.println("-> " + e.getRawCode());
-		System.out.println("-> " + e.getID());
-		System.out.println("-> " + e.getKeyLocation());
-		System.out.println("-> " + e.getModifiers());
+		if(e.getKeyCode()==JACKIN)
+			this.talker.setTalkerJackStatus(JACKSTATUS.ON);
+		if(e.getKeyCode()==JACKOUT)
+			this.talker.setTalkerJackStatus(JACKSTATUS.OFF);
+		try {
+			this.talker.talk(NativeKeyEvent.getKeyText(e.getKeyCode()));
+		} catch (Exception e2) {
+			// TODO Auto-generated catch block
+			e2.printStackTrace();
+		}
 		if (e.getKeyCode() == NativeKeyEvent.VC_ESCAPE) {
 			try {
 				GlobalScreen.unregisterNativeHook();
+				this.talker.closeTalker();
 			} catch (NativeHookException e1) {
 				e1.printStackTrace();
 			}
@@ -66,6 +71,6 @@ public class GlobalKeyListener implements NativeKeyListener{
 			System.exit(1);
 		}
 
-		GlobalScreen.addNativeKeyListener(new GlobalKeyListener());
+		GlobalScreen.addNativeKeyListener(new GlobalKeyListener(this.talker));
 	}	
 }

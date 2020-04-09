@@ -19,7 +19,6 @@ import com.sun.speech.freetts.audio.AudioPlayer;
 import com.sun.speech.freetts.audio.SingleFileAudioPlayer;
 
 import StormInterfaceApi.StormCommunicationManager;
-import StormInterfaceApi.deviceManager.Talker.JACKSTATUS;
 import StormInterfaceApi.utilities.DeviceInfo;
 import StormInterfaceApi.utilities.StormInterfaceException; 
 
@@ -33,7 +32,7 @@ public class Talker {
 	private VoiceManager voiceManager;
 	private Voice voice;
 	private File fileIn;
-	protected JACKSTATUS jackStatus;
+	private JACKSTATUS jackStatus;
 	private DeviceInfo deviceInfo = new DeviceInfo();
 	private StormCommunicationManager stormCommunicationManager;
 	
@@ -57,41 +56,37 @@ public class Talker {
 	    System.out.println(deviceInfo.getJackStatus());
 	    for(byte bytes : deviceInfo.getKeyCode())
 	    	System.out.printf("%02x ", bytes);
+	    System.out.println();
 	}
 	
-	public void setTalkerJackStatus(JACKSTATUS jackstatus)
+	protected void setTalkerJackStatus(JACKSTATUS jackstatus)
 	{
-		this.jackStatus = jackStatus;
+		this.jackStatus = jackstatus;
 	}
 	
-	public void talk(String button) throws Exception
+	protected void closeTalker()
 	{
-		switch(button)
-		{
-		case "Left":
-			this.buttonText = "Left";
-			break;
-		case "Right":
-			this.buttonText = "Right";
-			break;
-		case "Up":
-			this.buttonText = "Up";
-			break;
-		case "Down":
-			this.buttonText = "Down";
-			break;
-		case "JackIn":
-			this.buttonText = "JackIn";
-			break;
-		case "JackOut":
-			this.buttonText = "JackOut";
-			break;
-		case "testStormAudio":
-			this.buttonText = "testStormAudio";
-			break;
-		default:
-			throw new StormInterfaceException("Unknown Button Text: " + this.buttonText + ".");
-		}
+		//TODO löscht noch nicht die kürzlich hinzugefügten
+		File file = new File("../StormInterfaceApi/audio/");
+		File[] contents = file.listFiles();
+		for(File files : contents)
+			if(files.getName()!="testStormAudio.wav")
+			{
+				try
+				{
+					files.delete();
+				}
+				catch(Exception e)
+				{
+					e.printStackTrace();
+				}
+			}
+		
+	}
+	
+	protected void talk(String button) throws Exception
+	{
+		this.buttonText = button;
 		saveFile();
 	}
 	
@@ -120,10 +115,14 @@ public class Talker {
 	{
 		AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(this.fileIn);
 		List<Mixer.Info> fittingSoundDevices = filterDevices();
-		System.out.println(fittingSoundDevices.get(2));
 		try
 		{
-			Clip line = AudioSystem.getClip(fittingSoundDevices.get(2));
+			Clip line;
+			//TODO saubere Lösung
+			if(this.jackStatus == JACKSTATUS.OFF)
+				line = AudioSystem.getClip(fittingSoundDevices.get(0));
+			else
+				line = AudioSystem.getClip(fittingSoundDevices.get(2));
 			line.open(audioInputStream);
 			line.start();
 			line.drain();

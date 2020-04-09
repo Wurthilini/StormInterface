@@ -2,6 +2,7 @@ package StormInterfaceApi;
 
 
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 
 import org.hid4java.HidDevice;
 import org.hid4java.HidManager;
@@ -275,6 +276,9 @@ public class StormCommunicationManager{
 		else
 			readMessageSuccess = false;
 		retbool = readMessageSuccess ? true : false;
+		//TODO -> saubere lösung
+		TimeUnit.SECONDS.sleep(5);
+		initialiseStormUSBDevice();
 		return retbool;
 	}
 	
