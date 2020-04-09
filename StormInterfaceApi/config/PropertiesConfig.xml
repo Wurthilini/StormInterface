@@ -7,13 +7,13 @@
 	<!-- If CodeTable id is 2, specify your customised code table here ... -->
 	<customisedTableCodes>
 		<customisedTableCode id="Volume" usbUsageName="usbUsageA" modifierName="" />
-		<customisedTableCode id="Left" usbUsageName="usbUsageB" modifierName="usbUsageRightShift"  />
+		<customisedTableCode id="Left" usbUsageName="usbUsageB" modifierName=""/>
 		<customisedTableCode id="Right" usbUsageName="usbUsageC" modifierName="" />
-		<customisedTableCode id="Down" usbUsageName="usbUsageD" modifierName="usbUsageRightShift" />
+		<customisedTableCode id="Down" usbUsageName="usbUsageD" modifierName=""/>
 		<customisedTableCode id="Up" usbUsageName="usbUsageE" modifierName="" />
-		<customisedTableCode id="Enter" usbUsageName="usbUsageF" modifierName="usbUsageRightShift" />
+		<customisedTableCode id="Enter" usbUsageName="usbUsageF" modifierName=""/>
 		<customisedTableCode id="Horizontal" usbUsageName="usbUsageG" modifierName="" />
-		<customisedTableCode id="Vertical" usbUsageName="usbUsageH" modifierName="usbUsageRightShift" />
+		<customisedTableCode id="Vertical" usbUsageName="usbUsageH" modifierName=""/>
 		<!--<customisedTableCode id="JackIn" usbUsageName="usbUsageI" modifierName="" />
 		<customisedTableCode id="JackOut" usbUsageName="usbUsageJ" modifierName="usbUsageRightShift" />-->
 	</customisedTableCodes>
