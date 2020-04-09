@@ -29,9 +29,10 @@ public class DeviceInfo {
 			return this.keypad_table;
 		}
 		
-		public int getJackStatus()
+		public boolean getJackStatus()
 		{
-			return this.jack_status;
+			boolean jackStatus = this.jack_status == 0 ? true : false;
+			return jackStatus;
 		}
 		
 		public int getHvStatus()

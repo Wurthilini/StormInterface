@@ -18,6 +18,9 @@ import com.sun.speech.freetts.VoiceManager;
 import com.sun.speech.freetts.audio.AudioPlayer;
 import com.sun.speech.freetts.audio.SingleFileAudioPlayer;
 
+import StormInterfaceApi.StormCommunicationManager;
+import StormInterfaceApi.deviceManager.Talker.JACKSTATUS;
+import StormInterfaceApi.utilities.DeviceInfo;
 import StormInterfaceApi.utilities.StormInterfaceException; 
 
   
@@ -30,14 +33,39 @@ public class Talker {
 	private VoiceManager voiceManager;
 	private Voice voice;
 	private File fileIn;
+	protected JACKSTATUS jackStatus;
+	private DeviceInfo deviceInfo = new DeviceInfo();
+	private StormCommunicationManager stormCommunicationManager;
 	
-	public Talker(String button) throws Exception
+	public enum JACKSTATUS
 	{
-		this.voiceManager = VoiceManager.getInstance();
-		this.voice = voiceManager.getVoice(this.voiceName);
-		this.voice.allocate();
-		if(this.voice==null)
-			throw new StormInterfaceException("Cannot find voice named " + this.voiceName + ". Please specify a different voice.");
+		ON,
+		OFF;
+	}
+	
+	public Talker(StormCommunicationManager stormCommunicationManager) throws StormInterfaceException
+	{
+		this.stormCommunicationManager = stormCommunicationManager;
+		try {
+			this.stormCommunicationManager.getDeviceStatus(this.deviceInfo);
+		} catch (Exception e) {
+			throw new StormInterfaceException("Unable to get DeviceInfo");
+		}
+		this.jackStatus = deviceInfo.getJackStatus() ? JACKSTATUS.ON : JACKSTATUS.OFF;
+	    System.out.println(deviceInfo.getSerialNumber());
+	    System.out.println(deviceInfo.getVersion());
+	    System.out.println(deviceInfo.getJackStatus());
+	    for(byte bytes : deviceInfo.getKeyCode())
+	    	System.out.printf("%02x ", bytes);
+	}
+	
+	public void setTalkerJackStatus(JACKSTATUS jackstatus)
+	{
+		this.jackStatus = jackStatus;
+	}
+	
+	public void talk(String button) throws Exception
+	{
 		switch(button)
 		{
 		case "Left":
@@ -69,6 +97,11 @@ public class Talker {
 	
 	private void saveFile() throws Exception
 	{
+		this.voiceManager = VoiceManager.getInstance();
+		this.voice = voiceManager.getVoice(this.voiceName);
+		this.voice.allocate();
+		if(this.voice==null)
+			throw new StormInterfaceException("Cannot find voice named " + this.voiceName + ". Please specify a different voice.");
 		boolean waveFileAlreadyExists = new File("../StormInterfaceApi/audio/", this.buttonText + ".wav").exists();
 		String outputDir = "../StormInterfaceApi/audio/" + this.buttonText;
 		if(!waveFileAlreadyExists || this.buttonText != "testStormAudio")

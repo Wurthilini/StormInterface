@@ -11,11 +11,26 @@ import org.jnativehook.keyboard.NativeKeyListener;
 
 
 public class GlobalKeyListener implements NativeKeyListener{
-
+	private Talker talker;
+	
+	public GlobalKeyListener()
+	{
+		
+	}
+	
+	public GlobalKeyListener(Talker talker)
+	{
+		this.talker = talker;
+	}
+	
 	@Override
 	public void nativeKeyPressed(NativeKeyEvent e) {
 		System.out.println("Key Pressed: " + NativeKeyEvent.getKeyText(e.getKeyCode()));
-
+		System.out.println("-> " + e.getKeyCode());
+		System.out.println("-> " + e.getRawCode());
+		System.out.println("-> " + e.getID());
+		System.out.println("-> " + e.getKeyLocation());
+		System.out.println("-> " + e.getModifiers());
 		if (e.getKeyCode() == NativeKeyEvent.VC_ESCAPE) {
 			try {
 				GlobalScreen.unregisterNativeHook();
@@ -36,7 +51,7 @@ public class GlobalKeyListener implements NativeKeyListener{
 		System.out.println("Key Typed: " + e.getKeyText(e.getKeyCode()));
 	}
 	
-	public static void main(String[] args)
+	public void start()
 	{
 		LogManager.getLogManager().reset();
 		Logger logger = Logger.getLogger(GlobalScreen.class.getPackage().getName());
@@ -52,8 +67,5 @@ public class GlobalKeyListener implements NativeKeyListener{
 		}
 
 		GlobalScreen.addNativeKeyListener(new GlobalKeyListener());
-	}
-	
-	
-	
+	}	
 }
